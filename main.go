@@ -1,0 +1,54 @@
+package main
+
+import (
+	"fmt"
+	"os"
+	"strings"
+)
+
+// hm, a main menu actually sounds like a nice idea here!
+func MainInteractive() error {
+	var input string
+	var err error
+	var username, ticket, studentID string
+
+	fmt.Print("hello! to see a list of commands, you can use \033[1mh\033[0m.\n\n> ")
+
+	for {
+		fmt.Scanln(&input)
+		input = strings.ToLower(strings.TrimSpace(input))
+
+		switch input {
+		case "h", "help":
+			fmt.Println(HelpText)
+		case "q", "quit":
+			return nil
+		case "s":
+			username, ticket, studentID, err = signIn()
+			if err != nil {
+				fmt.Println(err)
+				break
+			}
+			fmt.Println("\nsigned in as", username)
+		case "u":
+			if username == "" {
+				fmt.Println("you arent signed in")
+			} else {
+				fmt.Println("currently signed in as", username)
+			}
+		case "a":
+			if err = showAllGrades(ticket, studentID); err != nil {
+				fmt.Println(err)
+			}
+		}
+
+		fmt.Print("\n> ")
+	}
+}
+
+func main() {
+	if err := MainInteractive(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
