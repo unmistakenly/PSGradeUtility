@@ -17,8 +17,8 @@ import (
 var httpClient = &http.Client{Timeout: 5 * time.Second}
 
 var (
-	ErrNoTicket   = errors.New("serviceTicket not found in response body")
-	ErrNotStudent = errors.New("sign in using your own account, please (not your parent's!)")
+	ErrNoTicket   = errors.New("serviceTicket not found in response body\nare you sure your password is correct?")
+	ErrNotStudent = errors.New("parent accounts are unsupported, please sign in using your own account")
 )
 
 func GetServiceTicket(username, password string) (string, string, error) {

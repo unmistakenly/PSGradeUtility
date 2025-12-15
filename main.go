@@ -24,18 +24,19 @@ func MainInteractive() error {
 		case "q", "quit":
 			return nil
 		case "s":
-			username, ticket, studentID, err = signIn()
+			u, t, s, err := signIn()
 			if err != nil {
 				fmt.Println(err)
 				break
 			}
+			username, ticket, studentID = u, t, s
 			fmt.Println("\nsigned in as", username)
 		case "u":
 			if username == "" {
 				fmt.Println("you arent signed in")
-			} else {
-				fmt.Println("currently signed in as", username)
+				break
 			}
+			fmt.Println("currently signed in as", username)
 		case "a":
 			if err = showAllGrades(ticket, studentID); err != nil {
 				fmt.Println(err)

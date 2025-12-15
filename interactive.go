@@ -12,7 +12,10 @@ import (
 	"golang.org/x/term"
 )
 
-var ErrNotSignedIn = errors.New("you need to sign in first")
+var (
+	ErrNotSignedIn     = errors.New("you need to sign in first")
+	ErrSignInCancelled = errors.New("sign in cancelled")
+)
 
 const QuarterFormat = "Monday, January 2, 2006"
 
@@ -27,6 +30,13 @@ a - get ALL grades`
 func signIn() (username, ticket, studentID string, err error) {
 	fmt.Print("username: ")
 	fmt.Scanln(&username)
+
+	// just in case they accidentally use the command and back out
+	// (definitely didnt happen to me)
+	if username == "" {
+		err = ErrSignInCancelled
+		return
+	}
 
 	fmt.Print("password: ")
 	password, err := term.ReadPassword(int(os.Stdin.Fd()))
