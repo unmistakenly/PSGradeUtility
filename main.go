@@ -41,6 +41,10 @@ func MainInteractive() error {
 			if err = showAllGrades(ticket, studentID); err != nil {
 				fmt.Println(err)
 			}
+		case "c":
+			if err = gradeCalculator(ticket, studentID); err != nil {
+				fmt.Println(err)
+			}
 		}
 
 		fmt.Print("\n> ")
