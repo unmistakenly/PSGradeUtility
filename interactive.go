@@ -14,6 +14,8 @@ import (
 
 var ErrNotSignedIn = errors.New("you need to sign in first")
 
+const QuarterFormat = "Monday, January 2, 2006"
+
 const HelpText = `commands:
 
 h - view this help text at any time
@@ -56,6 +58,9 @@ func showAllGrades(ticket, studentID string) error {
 	}
 
 	quarterStart, quarterEnd := data.Response.Return.Data.GetCurrentQuarter()
+	fmt.Println("Quarter Start:", quarterStart.Format(QuarterFormat))
+	fmt.Println("Quarter End:", quarterEnd.Format(QuarterFormat))
+	fmt.Println()
 
 	weightIDs := map[int]string{}
 	for _, w := range data.Response.Return.Data.Categories {
@@ -73,7 +78,9 @@ func showAllGrades(ticket, studentID string) error {
 		if err != nil {
 			continue
 		}
-		if assigned.After(quarterStart) && assigned.Before(quarterEnd) {
+		after := assigned.Compare(quarterStart)
+		before := assigned.Compare(quarterEnd)
+		if after >= 0 && before <= 0 {
 			assignments[a.ID] = a
 		}
 	}
