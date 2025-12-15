@@ -73,7 +73,7 @@ func showAllGrades(ticket, studentID string) error {
 		if err != nil {
 			continue
 		}
-		if assigned.Compare(quarterStart) == 1 && assigned.Compare(quarterEnd) == -1 {
+		if assigned.After(quarterStart) && assigned.Before(quarterEnd) {
 			assignments[a.ID] = a
 		}
 	}
