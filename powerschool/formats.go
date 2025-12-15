@@ -43,8 +43,9 @@ type Category struct {
 }
 
 type Score struct {
-	AssignmentID int     `json:"assignmentId"`
-	Percent      float64 `json:"percent"`
+	Exempt       bool `json:"exempt"`
+	AssignmentID int  `json:"assignmentId"`
+	Percent      any  `json:"percent"`
 }
 
 type DataResponse struct {

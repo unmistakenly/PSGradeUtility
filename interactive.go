@@ -94,7 +94,12 @@ func extractInfoFromResponse(data *powerschool.FullResponse, qStart, qEnd time.T
 	}
 	for _, s := range data.Response.Return.Data.Scores {
 		if assignment, ok := assignments[s.AssignmentID]; ok {
-			assignment.Percent = s.Percent
+			if s.Exempt {
+				continue
+			}
+			if p, ok := s.Percent.(float64); ok {
+				assignment.Percent = p
+			}
 			classes[assignment.SectionID].Assignments = append(classes[assignment.SectionID].Assignments, assignment)
 		}
 	}
