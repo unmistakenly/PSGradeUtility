@@ -59,6 +59,9 @@ func getFullDecodedResponse(ticket, studentID string) (*powerschool.FullResponse
 	}
 	defer r.Close()
 
+	// todo: read at least 400 bytes to ensure it wasnt an Unauthorized response
+	// io.ReadAtLeast requires prealloc, so probably have to make my own ReadAtLeast
+
 	var data *powerschool.FullResponse
 	err = json.NewDecoder(r).Decode(&data)
 	return data, err
