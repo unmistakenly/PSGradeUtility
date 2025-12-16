@@ -60,7 +60,7 @@ type DataResponse struct {
 type FullResponse struct {
 	Response struct {
 		Return struct {
-			Data DataResponse `json:"studentDataVOs"`
+			Data *DataResponse `json:"studentDataVOs"`
 		} `json:"return"`
 	} `json:"getStudentDataResponse"`
 }

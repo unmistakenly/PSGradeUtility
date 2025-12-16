@@ -15,6 +15,7 @@ import (
 var (
 	ErrNotSignedIn     = errors.New("you need to sign in first")
 	ErrSignInCancelled = errors.New("sign in cancelled")
+	ErrNoStudentData   = errors.New("studentDataVOs is nil, maybe your session expired? try signing in again")
 )
 
 const QuarterFormat = "Monday, January 2, 2006"
@@ -59,11 +60,15 @@ func getFullDecodedResponse(ticket, studentID string) (*powerschool.FullResponse
 	}
 	defer r.Close()
 
-	// todo: read at least 400 bytes to ensure it wasnt an Unauthorized response
-	// io.ReadAtLeast requires prealloc, so probably have to make my own ReadAtLeast
-
 	var data *powerschool.FullResponse
 	err = json.NewDecoder(r).Decode(&data)
+
+	// yeah nvm forget about it, reading the whole response body is fine!
+	// and we can just check if studentDataVOs is nil
+	if data.Response.Return.Data == nil {
+		return nil, ErrNoStudentData
+	}
+
 	return data, err
 }
 
