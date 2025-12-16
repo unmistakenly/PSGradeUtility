@@ -89,12 +89,13 @@ func extractInfoFromResponse(data *powerschool.FullResponse, qStart, qEnd time.T
 		after := assigned.Compare(qStart)
 		before := assigned.Compare(qEnd)
 		if after >= 0 && before <= 0 {
+			a.Percent = 100 // default?
 			assignments[a.ID] = a
 		}
 	}
 	for _, s := range data.Response.Return.Data.Scores {
 		if assignment, ok := assignments[s.AssignmentID]; ok {
-			if s.Exempt {
+			if s.Exempt || s.Collected {
 				continue
 			}
 			if p, ok := s.Percent.(float64); ok {

@@ -43,6 +43,7 @@ type Category struct {
 }
 
 type Score struct {
+	Collected    bool `json:"collected"`
 	Exempt       bool `json:"exempt"`
 	AssignmentID int  `json:"assignmentId"`
 	Percent      any  `json:"percent"`
