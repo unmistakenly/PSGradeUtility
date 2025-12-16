@@ -12,9 +12,10 @@ func MainInteractive() error {
 	var err error
 	var username, ticket, studentID string
 
-	fmt.Print("hello! to see a list of commands, you can use \033[1mh\033[0m.\n\n> ")
+	fmt.Println("hello! to see a list of commands, you can use \033[1mh\033[0m.")
 
 	for {
+		fmt.Print("\n> ")
 		fmt.Scanln(&input)
 		input = strings.ToLower(strings.TrimSpace(input))
 
@@ -45,9 +46,9 @@ func MainInteractive() error {
 			if err = gradeCalculator(ticket, studentID); err != nil {
 				fmt.Println(err)
 			}
+		default:
+			fmt.Println("unrecognized input")
 		}
-
-		fmt.Print("\n> ")
 	}
 }
 
