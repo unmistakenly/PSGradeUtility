@@ -30,7 +30,11 @@ func GetServiceTicket(username, password string) (string, string, error) {
 		"{password}", password,
 	).Replace(powerschool.PortalServiceLoginTemplate)
 
-	authReq, _ := http.NewRequest(http.MethodPost, "https://myps.horrycountyschools.net/pearson-rest/services/PublicPortalService", strings.NewReader(body))
+	authReq, _ := http.NewRequest(
+		http.MethodPost,
+		PowerSchoolInstance+"/pearson-rest/services/PublicPortalService",
+		strings.NewReader(body),
+	)
 
 	authResp, err := httpClient.Do(authReq)
 	if err != nil {
@@ -44,6 +48,7 @@ func GetServiceTicket(username, password string) (string, string, error) {
 	}
 	sRespBody := respBody.String()
 
+	// so, about the regex here, i just REALLY didnt wanna parse xml, and this works fine!
 	ticketMatches := regexp.MustCompile(`\<serviceTicket\>(.+)\<\/serviceTicket\>`).FindStringSubmatch(sRespBody)
 	if len(ticketMatches) < 2 {
 		return "", "", ErrNoTicket
@@ -58,7 +63,7 @@ func GetServiceTicket(username, password string) (string, string, error) {
 
 // the caller is responsible for closing the response body
 func GetFullData(ticket, studentID string) (io.ReadCloser, error) {
-	const portalURL = "https://myps.horrycountyschools.net/pearson-rest/services/PublicPortalServiceJSON?response=application/json"
+	const portalURL = PowerSchoolInstance + "/pearson-rest/services/PublicPortalServiceJSON?response=application/json"
 
 	// first, you have to make the initial request and get a 401
 	body := strings.NewReplacer(
