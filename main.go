@@ -6,6 +6,9 @@ import (
 	"strings"
 )
 
+// just change this if you're in another school district
+const PowerSchoolInstance = "https://myps.horrycountyschools.net"
+
 // hm, a main menu actually sounds like a nice idea here!
 func MainInteractive() error {
 	var input string
