@@ -25,6 +25,7 @@ const HelpText = `commands:
 h - view this help text at any time
 q - fully quit at any time
 s - sign in to powerschool
+o - sign out of powerschool
 u - check who you are currently signed in as
 a - get ALL grades
 c - enter grade calculator`
