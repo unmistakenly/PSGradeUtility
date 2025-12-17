@@ -94,14 +94,5 @@ func GetFullData(ticket, studentID string) (io.ReadCloser, error) {
 		return nil, fmt.Errorf("making authorized request: %w", err)
 	}
 
-	// if resp.StatusCode == http.StatusUnauthorized {
-	// 	fmt.Print("\033[1m! service ticket is invalid, regenerating and retrying\033[0m\n\n")
-	// 	ticket, studentID, err = GetServiceTicket()
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	return GetFullData(ticket, studentID)
-	// }
-
 	return resp.Body, nil
 }
