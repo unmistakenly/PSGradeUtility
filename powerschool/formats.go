@@ -2,34 +2,20 @@ package powerschool
 
 const TimeFormat = "2006-01-02T15:04:05.000Z"
 
-// type FullSection struct {
-// 	Section     *Section
-// 	Assignments []*Assignment
-// }
-
-//
-
-// type Enrollment struct {
-// 	StartDate string `json:"startDate"`
-// 	EndDate   string `json:"endDate"`
-// }
-
 type Section struct {
 	ClassName string `json:"schoolCourseTitle"`
 	ClassID   int    `json:"id"`
-	// Enrollment Enrollment `json:"enrollments"`
 
 	Assignments []*Assignment
 }
 
 type Assignment struct {
-	Name       string `json:"name"`
-	ID         int    `json:"id"`         // get the score with matching id
-	CategoryID int    `json:"categoryId"` // match this to Low/Mid/High
-	// PublishDate string  `json:"publishonspecificdate"`
-	DueDate   string  `json:"dueDate"`
-	SectionID int     `json:"sectionid"`
-	Percent   float64 // set this yourself
+	Name       string  `json:"name"`
+	ID         int     `json:"id"`         // get the score with matching id
+	CategoryID int     `json:"categoryId"` // match this to Low/Mid/High
+	DueDate    string  `json:"dueDate"`
+	SectionID  int     `json:"sectionid"`
+	Percent    float64 // set this yourself
 }
 
 type Term struct {

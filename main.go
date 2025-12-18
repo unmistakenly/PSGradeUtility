@@ -36,6 +36,10 @@ func MainInteractive() error {
 			username, ticket, studentID = u, t, s
 			fmt.Println("\nsigned in as", username)
 		case "o":
+			if username == "" {
+				fmt.Println("you arent signed in")
+				break
+			}
 			username, ticket, studentID = "", "", ""
 			fmt.Println("signed out")
 		case "u":
