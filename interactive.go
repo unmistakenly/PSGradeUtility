@@ -25,6 +25,7 @@ const HelpText = `commands:
 h - view this help text at any time
 q - fully quit at any time
 s - sign in to powerschool
+o - sign out of powerschool
 u - check who you are currently signed in as
 a - get ALL grades
 c - enter grade calculator`
@@ -113,6 +114,14 @@ func extractInfoFromResponse(data *powerschool.FullResponse, qStart, qEnd time.T
 		}
 	}
 
+	for _, c := range classes {
+		slices.SortFunc(c.Assignments, func(a1, a2 *powerschool.Assignment) int {
+			t1, _ := time.Parse(powerschool.TimeFormat, a1.DueDate)
+			t2, _ := time.Parse(powerschool.TimeFormat, a2.DueDate)
+			return -t1.Compare(t2) // negative to sort in descending order, like the app
+		})
+	}
+
 	return
 }
 
@@ -137,11 +146,6 @@ func showAllGrades(ticket, studentID string) error {
 		if len(c.Assignments) == 0 {
 			continue
 		}
-		slices.SortFunc(c.Assignments, func(a1, a2 *powerschool.Assignment) int {
-			t1, _ := time.Parse(powerschool.TimeFormat, a1.DueDate)
-			t2, _ := time.Parse(powerschool.TimeFormat, a2.DueDate)
-			return -t1.Compare(t2) // negative to sort in descending order, like the app
-		})
 		fmt.Printf("\033[1m+ %s (%.0f%%)\033[0m\n", c.ClassName, c.FinalGrade(weightIDs))
 		for _, v := range c.Assignments {
 			fmt.Printf("%s - %v%% (%s)\n", v.Name, v.Percent, weightIDs[v.CategoryID])

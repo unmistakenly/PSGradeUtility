@@ -11,8 +11,6 @@ import (
 	"github.com/unmistakenly/PSGradeUtility/powerschool"
 )
 
-// const NonceFormat = "2006-01-02T15:04:05.000Z"
-
 // two types of nonces are used by powerschool:
 // 1. 8 random bytes, in hex format and base64-encoded, used to get the `serviceTicket` with the user's credentials
 // 2. 16 random bytes in hex format, used as `cnonce` when requesting user data from the /PublicPortalServiceJSON endpoint
