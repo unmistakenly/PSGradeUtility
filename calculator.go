@@ -30,7 +30,7 @@ del <index>
 view`
 
 // gradeCalculator will start its own input loops
-func gradeCalculator(ticket, studentID string) error {
+func gradeCalculator(ticket, studentID string, preferClassNames bool) error {
 	// this will have a lot of shared code with [showAllGrades]
 	if ticket == "" {
 		return ErrNotSignedIn
@@ -81,12 +81,18 @@ func gradeCalculator(ticket, studentID string) error {
 				fmt.Println("unrecognized input")
 				break
 			}
-			classCalculator(sclasses[i].Assignments, i, weightIDs)
+			var ref any
+			if preferClassNames {
+				ref = sclasses[i].ClassName
+			} else {
+				ref = i
+			}
+			classCalculator(sclasses[i].Assignments, weightIDs, ref)
 		}
 	}
 }
 
-func classCalculator(origAssignments []*powerschool.Assignment, i int, weightIDs map[int]string) error {
+func classCalculator(origAssignments []*powerschool.Assignment, weightIDs map[int]string, ref any) error {
 	var input string
 
 	// enforce access of assignments through section only, as it will otherwise cause a runtime error (TOTALLY didnt happen)
@@ -124,7 +130,7 @@ func classCalculator(origAssignments []*powerschool.Assignment, i int, weightIDs
 	stdinReader := bufio.NewReader(os.Stdin)
 
 	for {
-		fmt.Printf("\n(%d) >> ", i)
+		fmt.Printf("\n(%v) >> ", ref)
 		input, _ = stdinReader.ReadString('\n')
 		input = strings.ToLower(strings.TrimSpace(input))
 

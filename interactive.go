@@ -26,9 +26,11 @@ h - view this help text at any time
 q - fully quit at any time
 s - sign in to powerschool
 o - sign out of powerschool
-u - check who you are currently signed in as
 a - get ALL grades
-c - enter grade calculator`
+c - enter grade calculator
+
+p - switch class index/name preference
+i - view current session info + preferences`
 
 func signIn() (username, ticket, studentID string, err error) {
 	fmt.Print("username: ")

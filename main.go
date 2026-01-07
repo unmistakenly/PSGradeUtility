@@ -16,6 +16,7 @@ func MainInteractive() error {
 	var username, ticket, studentID string
 
 	fmt.Println("hello! to see a list of commands, you can use \033[1mh\033[0m.")
+	preferClassNames := true
 
 	for {
 		fmt.Print("\n> ")
@@ -42,20 +43,28 @@ func MainInteractive() error {
 			}
 			username, ticket, studentID = "", "", ""
 			fmt.Println("signed out")
-		case "u":
-			if username == "" {
-				fmt.Println("you arent signed in")
-				break
-			}
-			fmt.Println("currently signed in as", username)
 		case "a":
 			if err = showAllGrades(ticket, studentID); err != nil {
 				fmt.Println(err)
 			}
 		case "c":
-			if err = gradeCalculator(ticket, studentID); err != nil {
+			if err = gradeCalculator(ticket, studentID, preferClassNames); err != nil {
 				fmt.Println(err)
 			}
+		case "p":
+			if preferClassNames {
+				fmt.Println("now preferring class indexes over names")
+			} else {
+				fmt.Println("now preffering class names over indexes")
+			}
+			preferClassNames = !preferClassNames
+		case "i":
+			if username == "" {
+				fmt.Println("you arent signed in")
+			} else {
+				fmt.Println("currently signed in as", username)
+			}
+			fmt.Println("\nprefer class names over indexes:", preferClassNames)
 		default:
 			fmt.Println("unrecognized input")
 		}
