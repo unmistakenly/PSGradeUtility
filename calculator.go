@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"slices"
@@ -63,10 +62,11 @@ func gradeCalculator(ticket, studentID string, preferClassNames bool) error {
 
 	for {
 		fmt.Print("\n>> ")
-		fmt.Scanln(&input)
+		input, _ = stdinReader.ReadString('\n')
 		input = strings.ToLower(strings.TrimSpace(input))
 
 		switch input {
+		case "":
 		case "h", "help":
 			fmt.Println(CalcMenuHelpText)
 			fmt.Println()
@@ -126,9 +126,6 @@ func classCalculator(origAssignments []*powerschool.Assignment, weightIDs map[in
 	}
 	printAssignments()
 
-	// i actually didnt know fmt.Scanln seperated inputs with spaces. funky!
-	stdinReader := bufio.NewReader(os.Stdin)
-
 	for {
 		fmt.Printf("\n(%v) >> ", ref)
 		input, _ = stdinReader.ReadString('\n')
@@ -144,6 +141,7 @@ func classCalculator(origAssignments []*powerschool.Assignment, weightIDs map[in
 		default:
 			args := strings.SplitN(input, " ", 4)
 			switch args[0] { // lol rip
+			case "":
 			case "v", "view":
 				printAssignments()
 				fmt.Printf("\nfinal grade: %.0f%%\n", section.FinalGrade(weightIDs))

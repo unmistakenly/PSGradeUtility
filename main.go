@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"strings"
@@ -8,6 +9,9 @@ import (
 
 // just change this if you're in another school district
 const PowerSchoolInstance = "https://myps.horrycountyschools.net"
+
+// i actually didnt know fmt.Scanln seperated inputs with spaces. funky!
+var stdinReader = bufio.NewReader(os.Stdin)
 
 // hm, a main menu actually sounds like a nice idea here!
 func MainInteractive() error {
@@ -20,10 +24,11 @@ func MainInteractive() error {
 
 	for {
 		fmt.Print("\n> ")
-		fmt.Scanln(&input)
+		input, _ = stdinReader.ReadString('\n')
 		input = strings.ToLower(strings.TrimSpace(input))
 
 		switch input {
+		case "":
 		case "h", "help":
 			fmt.Println(HelpText)
 		case "q", "quit":
