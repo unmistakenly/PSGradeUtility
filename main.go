@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
+	"os/signal"
 )
 
 // just change this if you're in another school district
@@ -15,19 +15,18 @@ var stdinReader = bufio.NewReader(os.Stdin)
 
 // hm, a main menu actually sounds like a nice idea here!
 func MainInteractive() error {
-	var input string
-	var err error
 	var username, ticket, studentID string
 
-	fmt.Println("hello! to see a list of commands, you can use \033[1mh\033[0m.")
+	sc = make(chan os.Signal, 1)
 	preferClassNames := true
+	signal.Notify(sc, os.Interrupt)
+
+	fmt.Println("hello! to see a list of commands, you can use \033[1mh\033[0m.")
 
 	for {
 		fmt.Print("\n> ")
-		input, _ = stdinReader.ReadString('\n')
-		input = strings.ToLower(strings.TrimSpace(input))
 
-		switch input {
+		switch GetInput() {
 		case "":
 		case "h", "help":
 			fmt.Println(HelpText)
@@ -49,11 +48,11 @@ func MainInteractive() error {
 			username, ticket, studentID = "", "", ""
 			fmt.Println("signed out")
 		case "a":
-			if err = showAllGrades(ticket, studentID); err != nil {
+			if err := showAllGrades(ticket, studentID); err != nil {
 				fmt.Println(err)
 			}
 		case "c":
-			if err = gradeCalculator(ticket, studentID, preferClassNames); err != nil {
+			if err := gradeCalculator(ticket, studentID, preferClassNames); err != nil {
 				fmt.Println(err)
 			}
 		case "p":

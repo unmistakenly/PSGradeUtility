@@ -56,14 +56,11 @@ func gradeCalculator(ticket, studentID string, preferClassNames bool) error {
 			fmt.Printf("[%d] %s (%.0f%%)\n", i, c.ClassName, c.FinalGrade(weightIDs))
 		}
 	}
-
-	var input string
 	printClasses()
 
 	for {
 		fmt.Print("\n>> ")
-		input, _ = stdinReader.ReadString('\n')
-		input = strings.ToLower(strings.TrimSpace(input))
+		input := GetInput()
 
 		switch input {
 		case "":
@@ -93,8 +90,6 @@ func gradeCalculator(ticket, studentID string, preferClassNames bool) error {
 }
 
 func classCalculator(origAssignments []*powerschool.Assignment, weightIDs map[int]string, ref any) error {
-	var input string
-
 	// enforce access of assignments through section only, as it will otherwise cause a runtime error (TOTALLY didnt happen)
 	section := func() *powerschool.Section {
 		// deep copy of origAssignments, so as to not modify it
@@ -128,8 +123,7 @@ func classCalculator(origAssignments []*powerschool.Assignment, weightIDs map[in
 
 	for {
 		fmt.Printf("\n(%v) >> ", ref)
-		input, _ = stdinReader.ReadString('\n')
-		input = strings.ToLower(strings.TrimSpace(input))
+		input := GetInput()
 
 		switch input {
 		case "h", "help":
