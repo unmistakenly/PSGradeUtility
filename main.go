@@ -17,7 +17,9 @@ var stdinReader = bufio.NewReader(os.Stdin)
 func MainInteractive() error {
 	var username, ticket, studentID string
 
+	inc = make(chan string, 1)
 	sc = make(chan os.Signal, 1)
+
 	preferClassNames := true
 	signal.Notify(sc, os.Interrupt)
 

@@ -5,11 +5,12 @@ import (
 	"strings"
 )
 
-var sc chan os.Signal
+var (
+	inc chan string
+	sc  chan os.Signal
+)
 
 func GetInput() string {
-	inc := make(chan string, 1)
-
 	go func() {
 		input, err := stdinReader.ReadString('\n')
 		if err != nil {
