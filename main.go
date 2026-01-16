@@ -59,7 +59,7 @@ func MainInteractive() error {
 			if preferClassNames {
 				fmt.Println("now preferring class indexes over names")
 			} else {
-				fmt.Println("now preffering class names over indexes")
+				fmt.Println("now preferring class names over indexes")
 			}
 			preferClassNames = !preferClassNames
 		case "i":
