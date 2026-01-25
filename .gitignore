@@ -1,3 +1,4 @@
 /PSGradeUtility*
 
-getStudentDataResponse.json
+# saving the response sometimes to debug
+*.json

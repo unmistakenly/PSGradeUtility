@@ -35,12 +35,19 @@ type Score struct {
 	Percent      any  `json:"percent"`
 }
 
+type School struct {
+	Disabled    bool   `json:"schoolDisabled"`
+	DisabledMsg string `json:"schoolDisabledMessage"`
+}
+
 type DataResponse struct {
 	Sections    []*Section    `json:"sections"`
 	Assignments []*Assignment `json:"assignments"`
 	Terms       []*Term       `json:"terms"`
 	Scores      []Score       `json:"assignmentScores"`
 	Categories  []Category    `json:"assignmentCategories"`
+
+	Schools School `json:"schools"` // yes, this is a singular item with a plural name, nice one powerschool
 }
 
 type FullResponse struct {
