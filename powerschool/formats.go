@@ -36,8 +36,8 @@ type Score struct {
 }
 
 type School struct {
-	Disabled    bool   `json:"schoolDisabled"`
-	DisabledMsg string `json:"schoolDisabledMessage"`
+	Disabled    bool `json:"schoolDisabled"`
+	DisabledMsg any  `json:"schoolDisabledMessage"`
 }
 
 type DataResponse struct {

@@ -71,7 +71,7 @@ func getFullDecodedResponse(ticket, studentID string) (*powerschool.FullResponse
 	if data.Response.Return.Data == nil {
 		return nil, ErrNoStudentData
 	} else if data.Response.Return.Data.Schools.Disabled {
-		return nil, fmt.Errorf("warning: data access is disabled. message:\n\n%s", data.Response.Return.Data.Schools.DisabledMsg)
+		return nil, fmt.Errorf("warning: data access is disabled. message:\n\n%v", data.Response.Return.Data.Schools.DisabledMsg)
 	}
 
 	return data, err
