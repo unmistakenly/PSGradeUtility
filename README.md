@@ -12,3 +12,8 @@ PSGradeUtility also defaults to using my school district's PowerSchool instance.
 2. you can use `h` in any part of the program for help. you'll need to sign in first using `s` before fetching your grades with `a` or entering the grade calculator with `c`
 3. after entering the grade calculator, just enter the number associated with the class you're looking for
 4. see `h` and read for yourself how to add/delete your own grades
+
+## stupid notices
+i completely forgot to mention that this only works for districts using weighted grading systems. like 20% low, 30% mid, and 50% high. i forgot that other systems might exist
+
+also, if you have a class that only contains mid and high grades, the final grade will be completely broken LOL, it's fine for me though so
