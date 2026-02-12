@@ -89,6 +89,9 @@ func extractInfoFromResponse(data *powerschool.FullResponse, qStart, qEnd time.T
 
 	classes = map[int]*powerschool.Section{}
 	for _, s := range data.Response.Return.Data.Sections {
+		s.Low = powerschool.NewGradeHolder(0.2)
+		s.Mid = powerschool.NewGradeHolder(0.3)
+		s.High = powerschool.NewGradeHolder(0.5)
 		classes[s.ClassID] = s
 	}
 

@@ -31,3 +31,8 @@ func (h *GradeHolder) Final(categories float64) float64 {
 		return avg * h.weight
 	}
 }
+
+func (h *GradeHolder) Reset() {
+	h.grade = 0
+	h.num = 0
+}

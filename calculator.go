@@ -53,7 +53,7 @@ func gradeCalculator(ticket, studentID string, preferClassNames bool) error {
 
 	printClasses := func() {
 		for i, c := range sclasses {
-			fmt.Printf("[%d] %s (%.0f%%)\n", i, c.ClassName, c.FinalGrade(weightIDs))
+			fmt.Printf("[%d] %s (%.0f%% - %d grades)\n", i, c.ClassName, c.FinalGrade(weightIDs), len(c.Assignments))
 		}
 	}
 	printClasses()
