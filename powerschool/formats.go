@@ -7,6 +7,8 @@ type Section struct {
 	ClassID   int    `json:"id"`
 
 	Assignments []*Assignment
+
+	Low, Mid, High *GradeHolder
 }
 
 type Assignment struct {

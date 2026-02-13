@@ -53,7 +53,7 @@ func gradeCalculator(ticket, studentID string, preferClassNames bool) error {
 
 	printClasses := func() {
 		for i, c := range sclasses {
-			fmt.Printf("[%d] %s (%.0f%%)\n", i, c.ClassName, c.FinalGrade(weightIDs))
+			fmt.Printf("[%d] %s (%.0f%% - %d grades)\n", i, c.ClassName, c.FinalGrade(weightIDs), len(c.Assignments))
 		}
 	}
 	printClasses()
@@ -84,25 +84,30 @@ func gradeCalculator(ticket, studentID string, preferClassNames bool) error {
 			} else {
 				ref = i
 			}
-			classCalculator(sclasses[i].Assignments, weightIDs, ref)
+			classCalculator(sclasses[i], weightIDs, ref)
 		}
 	}
 }
 
-func classCalculator(origAssignments []*powerschool.Assignment, weightIDs map[int]string, ref any) error {
+func classCalculator(origSection *powerschool.Section, weightIDs map[int]string, ref any) error {
 	// enforce access of assignments through section only, as it will otherwise cause a runtime error (TOTALLY didnt happen)
 	section := func() *powerschool.Section {
 		// deep copy of origAssignments, so as to not modify it
-		assignments := make([]*powerschool.Assignment, len(origAssignments), len(origAssignments)+3)
+		assignments := make([]*powerschool.Assignment, len(origSection.Assignments), len(origSection.Assignments)+3)
 		for i := range assignments {
-			orig := origAssignments[i]
+			orig := origSection.Assignments[i]
 			assignments[i] = &powerschool.Assignment{
 				Name:       orig.Name,
 				CategoryID: orig.CategoryID,
 				Percent:    orig.Percent,
 			}
 		}
-		return &powerschool.Section{Assignments: assignments}
+		return &powerschool.Section{
+			Assignments: assignments,
+			Low:         origSection.Low,
+			Mid:         origSection.Mid,
+			High:        origSection.High,
+		}
 	}()
 
 	// i couldnt think of any other way to do this
