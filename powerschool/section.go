@@ -30,16 +30,12 @@ func (s *Section) FinalGrade(weightIDs map[int]string) float64 {
 	// if there is only 1 category of grades, dont calculate weight at all
 	if l := len(categories); l == 1 {
 		return math.Round(categories[0].Final(1))
-	} else if l == 2 { // otherwise, double the weights (i Pray that there is no class that assigns only mid and high grades)
-		return math.Round(categories[0].Final(2) + categories[1].Final(2))
+	} else if l == 2 {
+		c0 := categories[0]
+		c1 := categories[1]
+		return math.Round(c0.Final(2, c1.Weight()) + c1.Final(2, c0.Weight()))
 	}
 
-	// so, when should we actually multiply by the weight? should be when all three categories are present
-	// if theres only one, then you dont need to multiply by any weight at all
-	//
-	// but what if theres only two? apparently, having a low grade 100 and a mid grade 80 gives an 88% average
-	// it works with: low * (0.2 * 2) + mid * (0.3 * 2) = 88
-	// but what if there was only a mid and a high grade? errr, that shouldnt happen in the real world i think, so it should be fine
 	return math.Round(
 		s.Low.Final(3) +
 			s.Mid.Final(3) +
