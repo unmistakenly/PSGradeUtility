@@ -12,12 +12,12 @@ type Section struct {
 }
 
 type Assignment struct {
-	Name       string  `json:"name"`
-	ID         int     `json:"id"`         // get the score with matching id
-	CategoryID int     `json:"categoryId"` // match this to Low/Mid/High
-	DueDate    string  `json:"dueDate"`
-	SectionID  int     `json:"sectionid"`
-	Percent    float64 // set this yourself
+	Name       string `json:"name"`
+	ID         int    `json:"id"`         // get the score with matching id
+	CategoryID int    `json:"categoryId"` // match this to Low/Mid/High
+	DueDate    string `json:"dueDate"`
+	SectionID  int    `json:"sectionid"`
+	Percent    uint64 // set this yourself
 }
 
 type Term struct {

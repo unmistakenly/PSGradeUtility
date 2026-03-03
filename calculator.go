@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"slices"
@@ -26,7 +27,10 @@ b - return to grade calculator main menu
 
 add <low/mid/high> <0-100> [<name>]
 del <index>
-view`
+view
+
+edit <index> <0-100>
+restore <index>`
 
 // gradeCalculator will start its own input loops
 func gradeCalculator(ticket, studentID string, preferClassNames bool) error {
@@ -113,7 +117,7 @@ func classCalculator(origSection *powerschool.Section, weightIDs map[int]string,
 	// i couldnt think of any other way to do this
 	weightToIDs := make(map[string]int, 3)
 	for id, weight := range weightIDs {
-		weight = strings.ToLower(weight)
+		weight = strings.ToLower(weight) // ToLower to match user input
 		if _, ok := weightToIDs[weight]; !ok {
 			weightToIDs[weight] = id
 		}
@@ -121,7 +125,7 @@ func classCalculator(origSection *powerschool.Section, weightIDs map[int]string,
 
 	printAssignments := func() {
 		for i, a := range section.Assignments {
-			fmt.Printf("[%d] %s - %.0f%% (%s)\n", i, a.Name, a.Percent, weightIDs[a.CategoryID])
+			fmt.Printf("[%d] %s - %d%% (%s)\n", i, a.Name, a.Percent&0xFFFFFFFF, weightIDs[a.CategoryID])
 		}
 	}
 	printAssignments()
@@ -156,7 +160,7 @@ func classCalculator(origSection *powerschool.Section, weightIDs map[int]string,
 					break
 				}
 
-				grade, err := strconv.ParseFloat(args[2], 64)
+				grade, err := strconv.ParseUint(args[2], 10, 64)
 				if err != nil {
 					fmt.Println("couldnt parse grade:", err)
 					break
@@ -174,28 +178,87 @@ func classCalculator(origSection *powerschool.Section, weightIDs map[int]string,
 				})
 
 				fmt.Printf("after adding this assignment, your final grade is %.0f%%\n", section.FinalGrade(weightIDs))
-			case "del", "delete":
+			case "d", "del", "delete":
 				if len(args) < 2 {
 					fmt.Println("expected 2 arguments, got", len(args))
 					break
 				}
 
-				i, err := strconv.Atoi(args[1])
+				i, err := parseIndex(args, section.Assignments)
 				if err != nil {
-					fmt.Println("couldnt parse index:", err)
-					break
-				}
-
-				if i+1 > len(section.Assignments) {
-					fmt.Println("invalid index")
+					fmt.Println(err)
 					break
 				}
 
 				section.Assignments = slices.Delete(section.Assignments, i, i+1)
 				fmt.Printf("after deleting this assignment, your final grade is %.0f%%\n", section.FinalGrade(weightIDs))
+			case "e", "edit":
+				if len(args) < 3 {
+					fmt.Println("expected 3 arguments, got", len(args))
+					break
+				}
+
+				i, err := parseIndex(args, section.Assignments)
+				if err != nil {
+					fmt.Println(err)
+					break
+				}
+
+				grade, err := strconv.ParseUint(args[2], 10, 64)
+				if err != nil {
+					fmt.Println("couldnt parse grade:", err)
+					break
+				}
+
+				// how about using the upper 32 bits for the original grade,
+				// and only use the lower portion for calculation?
+
+				a := section.Assignments[i]
+				if !gradeIsEdited(a.Percent) {
+					section.Assignments[i].Percent <<= 32 // move original grade to upper 32 bits
+				}
+
+				section.Assignments[i].Percent |= grade // new grade
+				fmt.Printf("after editing this assignment, your final grade is %.0f%%\n", section.FinalGrade(weightIDs))
+			case "r", "restore":
+				if len(args) < 2 {
+					fmt.Println("expected 2 arguments, got", len(args))
+					break
+				}
+
+				i, err := parseIndex(args, section.Assignments)
+				if err != nil {
+					fmt.Println(err)
+					break
+				}
+
+				a := section.Assignments[i]
+				if gradeIsEdited(a.Percent) {
+					a.Percent >>= 32 // restore 32 upper bits
+					fmt.Printf("after changing this grade back to a %d%%, your final grade is %.0f%%\n", a.Percent, section.FinalGrade(weightIDs))
+				} else {
+					fmt.Println("this assignment hasnt had its grade edited")
+				}
 			default:
 				fmt.Println("unrecognized input")
 			}
 		}
 	}
+}
+
+func parseIndex(args []string, assignments []*powerschool.Assignment) (int, error) {
+	i, err := strconv.Atoi(args[1])
+	if err != nil {
+		return 0, fmt.Errorf("couldnt parse index: %w", err)
+	}
+
+	if i < 0 || i+1 > len(assignments) {
+		return 0, errors.New("invalid index")
+	}
+
+	return i, nil
+}
+
+func gradeIsEdited(percent uint64) bool {
+	return (percent >> 32) != 0
 }
