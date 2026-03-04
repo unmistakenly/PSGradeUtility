@@ -115,7 +115,7 @@ func extractInfoFromResponse(data *powerschool.FullResponse, qStart, qEnd time.T
 				continue
 			}
 			if p, ok := s.Percent.(float64); ok {
-				assignment.Percent = p
+				assignment.Percent = uint64(p)
 			}
 			classes[assignment.SectionID].Assignments = append(classes[assignment.SectionID].Assignments, assignment)
 		}

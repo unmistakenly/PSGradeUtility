@@ -9,15 +9,16 @@ package powerschool
 // mid and high, 40% mid and 60% high (not verified, but probably)
 
 type GradeHolder struct {
-	grade, num, weight float64
+	grade       uint64
+	num, weight float64
 }
 
 func NewGradeHolder(weight float64) *GradeHolder {
 	return &GradeHolder{weight: weight}
 }
 
-func (h *GradeHolder) Add(grade float64) {
-	h.grade += grade
+func (h *GradeHolder) Add(grade uint64) {
+	h.grade += grade & 0xFFFFFFFF
 	h.num++
 }
 
@@ -31,7 +32,7 @@ func (h *GradeHolder) Weight() float64 {
 
 // if categories == 2, you must provide the weight of the other category present
 func (h *GradeHolder) Final(categories float64, other ...float64) float64 {
-	avg := h.grade / h.num
+	avg := float64(h.grade) / h.num
 
 	// powerschool will be the end of me
 	switch categories {
