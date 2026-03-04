@@ -17,7 +17,10 @@ type Assignment struct {
 	CategoryID int    `json:"categoryId"` // match this to Low/Mid/High
 	DueDate    string `json:"dueDate"`
 	SectionID  int    `json:"sectionid"`
-	Percent    uint64 // set this yourself
+
+	// set these yourself
+	Percent uint64
+	Note    string
 }
 
 type Term struct {

@@ -11,6 +11,8 @@ import (
 	"github.com/unmistakenly/PSGradeUtility/powerschool"
 )
 
+var ErrInvalidIndex = errors.New("invalid index")
+
 const CalcMenuHelpText = `calculator menu commands:
 
 h - view this help text at any time
@@ -125,7 +127,7 @@ func classCalculator(origSection *powerschool.Section, weightIDs map[int]string,
 
 	printAssignments := func() {
 		for i, a := range section.Assignments {
-			fmt.Printf("[%d] %s - %d%% (%s)\n", i, a.Name, a.Percent&0xFFFFFFFF, weightIDs[a.CategoryID])
+			fmt.Printf("[%d] %s - %d%% (%s)%s\n", i, a.Name, a.Percent&0xFFFFFFFF, weightIDs[a.CategoryID], a.Note)
 		}
 	}
 	printAssignments()
@@ -215,10 +217,11 @@ func classCalculator(origSection *powerschool.Section, weightIDs map[int]string,
 
 				a := section.Assignments[i]
 				if !gradeIsEdited(a.Percent) {
-					section.Assignments[i].Percent <<= 32 // move original grade to upper 32 bits
+					a.Percent <<= 32 // move original grade to upper 32 bits
+					a.Note = " (Edited)"
 				}
 
-				section.Assignments[i].Percent |= grade // new grade
+				a.Percent |= grade & 0xFFFFFFFF // new grade
 				fmt.Printf("after editing this assignment, your final grade is %.0f%%\n", section.FinalGrade(weightIDs))
 			case "r", "restore":
 				if len(args) < 2 {
@@ -235,6 +238,7 @@ func classCalculator(origSection *powerschool.Section, weightIDs map[int]string,
 				a := section.Assignments[i]
 				if gradeIsEdited(a.Percent) {
 					a.Percent >>= 32 // restore 32 upper bits
+					a.Note = ""
 					fmt.Printf("after changing this grade back to a %d%%, your final grade is %.0f%%\n", a.Percent, section.FinalGrade(weightIDs))
 				} else {
 					fmt.Println("this assignment hasnt had its grade edited")
@@ -253,7 +257,7 @@ func parseIndex(args []string, assignments []*powerschool.Assignment) (int, erro
 	}
 
 	if i < 0 || i+1 > len(assignments) {
-		return 0, errors.New("invalid index")
+		return 0, ErrInvalidIndex
 	}
 
 	return i, nil
