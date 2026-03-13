@@ -218,6 +218,7 @@ func classCalculator(origSection *powerschool.Section, weightIDs map[int]string,
 				a := section.Assignments[i]
 				if !gradeIsEdited(a.Percent) {
 					a.Percent <<= 32 // move original grade to upper 32 bits
+					a.Percent |= 1 << 63 // msb determines if grade is edited, to account for a grade of 0
 					a.Note = " (Edited)"
 				}
 
@@ -238,6 +239,7 @@ func classCalculator(origSection *powerschool.Section, weightIDs map[int]string,
 				a := section.Assignments[i]
 				if gradeIsEdited(a.Percent) {
 					a.Percent >>= 32 // restore 32 upper bits
+					a.Percent &= 0x7FFFFFFF // and remove the edit bit
 					a.Note = ""
 					fmt.Printf("after changing this grade back to a %d%%, your final grade is %.0f%%\n", a.Percent, section.FinalGrade(weightIDs))
 				} else {
@@ -264,5 +266,5 @@ func parseIndex(args []string, assignments []*powerschool.Assignment) (int, erro
 }
 
 func gradeIsEdited(percent uint64) bool {
-	return (percent >> 32) != 0
+	return (percent >> 63) != 0
 }
