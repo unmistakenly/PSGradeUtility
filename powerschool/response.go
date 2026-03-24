@@ -7,7 +7,7 @@ func (r *DataResponse) GetCurrentQuarter() (start, end time.Time) {
 	// we just have to make sure we're currently IN the quarter,
 	// and thats it's longer than 2 months but not longer than 3 (year-long classes)
 	// sure wouldve been nice if we had definitive data from the api, but im asking for too much!
-	now := time.Now().UTC()
+	now := time.Now().UTC().Truncate(24 * time.Hour) // we only need the date, not time (to fix incorrect quarter showing on last day)
 
 	for _, t := range r.Terms {
 		start, _ = time.Parse(TimeFormat, t.StartDate)
