@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -57,6 +58,26 @@ func signIn() (username, ticket, studentID string, err error) {
 }
 
 func getFullDecodedResponse(ticket, studentID string) (*powerschool.FullResponse, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// todo: maybe when signing in as well? that takes a while sometimes
+	go func(ctx context.Context) {
+		var chars = [4]string{"/", "-", `\`, "|"}
+		var i int
+
+		for {
+			if ctx.Err() != nil {
+				fmt.Print("\033[K") // clear line
+				return
+			}
+
+			fmt.Printf("fetching data... %s\r", chars[i%4])
+			i++
+			time.Sleep(80 * time.Millisecond)
+		}
+	}(ctx)
+
 	r, err := GetFullData(ticket, studentID)
 	if err != nil {
 		return nil, fmt.Errorf("couldnt get data from powerschool: %w", err)
