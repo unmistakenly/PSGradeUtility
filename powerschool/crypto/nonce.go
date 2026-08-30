@@ -33,6 +33,7 @@ func Nonce(bites int64, b64 bool) (nonce string, date string) {
 		}
 	}()
 
+	// kept in sync with powerschool.TimeFormat by timeformat_test.go
 	const dateFormat = "2006-01-02T15:04:05.000Z"
 	return b.String(), time.Now().UTC().Format(dateFormat)
 }

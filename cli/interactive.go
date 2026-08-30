@@ -159,7 +159,8 @@ func (s *Session) showAllGrades() error {
 		if len(c.Assignments) == 0 {
 			continue
 		}
-		fmt.Printf("\033[1m+ %s (%.0f%%)\033[0m\n", c.ClassName, c.FinalGrade(weightIDs))
+		grade, err := c.FinalGrade(weightIDs)
+		fmt.Printf("\033[1m+ %s (%s)\033[0m\n", c.ClassName, formatGrade(grade, err))
 		for _, v := range c.Assignments {
 			fmt.Printf("%s - %v%% (%s)\n", v.Name, v.Grade, weightIDs[v.CategoryID])
 		}

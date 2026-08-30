@@ -8,8 +8,10 @@ import (
 // FinalGrade computes this section's overall grade (0-100, rounded) from its
 // current Assignments, weighted by category per weightIDs (category ID ->
 // "Low"/"Mid"/"High"). Categories with no graded assignments are excluded
-// from the calculation rather than counted as 0%.
-func (s *Section) FinalGrade(weightIDs map[int]string) float64 {
+// from the calculation rather than counted as 0%. Returns
+// ErrUnsupportedWeightCombination if exactly 2 categories have grades and
+// the weights aren't PowerSchool's verified default split (see that error).
+func (s *Section) FinalGrade(weightIDs map[int]string) (float64, error) {
 	// this way, we dont need to allocate so much
 	s.Low.Reset()
 	s.Mid.Reset()
@@ -33,16 +35,33 @@ func (s *Section) FinalGrade(weightIDs map[int]string) float64 {
 
 	// if there is only 1 category of grades, dont calculate weight at all
 	if l := len(categories); l == 1 {
-		return math.Round(categories[0].Final(1))
+		v, err := categories[0].Final(1)
+		return math.Round(v), err
 	} else if l == 2 {
 		c0 := categories[0]
 		c1 := categories[1]
-		return math.Round(c0.Final(2, c1.Weight()) + c1.Final(2, c0.Weight()))
+		v0, err := c0.Final(2, c1.Weight())
+		if err != nil {
+			return 0, err
+		}
+		v1, err := c1.Final(2, c0.Weight())
+		if err != nil {
+			return 0, err
+		}
+		return math.Round(v0 + v1), nil
 	}
 
-	return math.Round(
-		s.Low.Final(3) +
-			s.Mid.Final(3) +
-			s.High.Final(3),
-	)
+	low, err := s.Low.Final(3)
+	if err != nil {
+		return 0, err
+	}
+	mid, err := s.Mid.Final(3)
+	if err != nil {
+		return 0, err
+	}
+	high, err := s.High.Final(3)
+	if err != nil {
+		return 0, err
+	}
+	return math.Round(low + mid + high), nil
 }

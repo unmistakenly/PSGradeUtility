@@ -1,16 +1,19 @@
 package powerschool
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
 
 // Table-driven coverage of FinalGrade's 1/2/3-category weighting, matching
 // the verified splits documented in grade.go's own comments (40/60 low+mid,
 // 30/70 low+high, 20/30/50 all three).
 
-func section(weightIDs map[int]string, grades map[string][]uint64) *Section {
+func section(weights [3]float64, weightIDs map[int]string, grades map[string][]uint64) *Section {
 	s := &Section{
-		Low:  NewGradeHolder(0.2),
-		Mid:  NewGradeHolder(0.3),
-		High: NewGradeHolder(0.5),
+		Low:  NewGradeHolder(weights[0]),
+		Mid:  NewGradeHolder(weights[1]),
+		High: NewGradeHolder(weights[2]),
 	}
 	id := 1
 	for cat, gs := range grades {
@@ -24,10 +27,15 @@ func section(weightIDs map[int]string, grades map[string][]uint64) *Section {
 	return s
 }
 
+var defaultWeights = [3]float64{0.2, 0.3, 0.5}
+
 func TestFinalGrade_SingleCategory(t *testing.T) {
 	weightIDs := map[int]string{}
-	s := section(weightIDs, map[string][]uint64{"Mid": {80, 90, 100}})
-	got := s.FinalGrade(weightIDs)
+	s := section(defaultWeights, weightIDs, map[string][]uint64{"Mid": {80, 90, 100}})
+	got, err := s.FinalGrade(weightIDs)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	if got != 90 {
 		t.Fatalf("want 90, got %v", got)
 	}
@@ -35,9 +43,12 @@ func TestFinalGrade_SingleCategory(t *testing.T) {
 
 func TestFinalGrade_TwoCategories_LowMid(t *testing.T) {
 	weightIDs := map[int]string{}
-	s := section(weightIDs, map[string][]uint64{"Low": {100}, "Mid": {0}})
+	s := section(defaultWeights, weightIDs, map[string][]uint64{"Low": {100}, "Mid": {0}})
 	// 40% low, 60% mid per the verified comment
-	got := s.FinalGrade(weightIDs)
+	got, err := s.FinalGrade(weightIDs)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	if got != 40 {
 		t.Fatalf("want 40 (100*0.4 + 0*0.6), got %v", got)
 	}
@@ -45,9 +56,12 @@ func TestFinalGrade_TwoCategories_LowMid(t *testing.T) {
 
 func TestFinalGrade_TwoCategories_LowHigh(t *testing.T) {
 	weightIDs := map[int]string{}
-	s := section(weightIDs, map[string][]uint64{"Low": {100}, "High": {0}})
+	s := section(defaultWeights, weightIDs, map[string][]uint64{"Low": {100}, "High": {0}})
 	// 30% low, 70% high per the verified comment
-	got := s.FinalGrade(weightIDs)
+	got, err := s.FinalGrade(weightIDs)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	if got != 30 {
 		t.Fatalf("want 30, got %v", got)
 	}
@@ -55,9 +69,12 @@ func TestFinalGrade_TwoCategories_LowHigh(t *testing.T) {
 
 func TestFinalGrade_ThreeCategories(t *testing.T) {
 	weightIDs := map[int]string{}
-	s := section(weightIDs, map[string][]uint64{"Low": {100}, "Mid": {100}, "High": {0}})
+	s := section(defaultWeights, weightIDs, map[string][]uint64{"Low": {100}, "Mid": {100}, "High": {0}})
 	// 20% low + 30% mid + 0% high = 50
-	got := s.FinalGrade(weightIDs)
+	got, err := s.FinalGrade(weightIDs)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	if got != 50 {
 		t.Fatalf("want 50, got %v", got)
 	}
@@ -66,10 +83,76 @@ func TestFinalGrade_ThreeCategories(t *testing.T) {
 func TestFinalGrade_EmptyCategoryExcluded(t *testing.T) {
 	weightIDs := map[int]string{}
 	// a category with zero assignments must not be counted (h.Num()==0 filter)
-	s := section(weightIDs, map[string][]uint64{"High": {80}})
-	got := s.FinalGrade(weightIDs)
+	s := section(defaultWeights, weightIDs, map[string][]uint64{"High": {80}})
+	got, err := s.FinalGrade(weightIDs)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	if got != 80 {
 		t.Fatalf("want 80 (single-category path, no weighting), got %v", got)
+	}
+}
+
+// Custom (non-default) weights — the bug judge caught: the 2-category branch
+// used to be a hardcoded lookup table keyed on the DEFAULT weight literals,
+// so any custom weight silently fell through to weight=0 and returned a
+// wrong-but-plausible-looking grade instead of an error.
+
+func TestFinalGrade_CustomWeights_ThreeCategoriesGeneral(t *testing.T) {
+	// 3-category is a plain weighted sum — correct for ANY weights, no table.
+	weightIDs := map[int]string{}
+	weights := [3]float64{0.1, 0.6, 0.3}
+	s := section(weights, weightIDs, map[string][]uint64{"Low": {100}, "Mid": {100}, "High": {100}})
+	got, err := s.FinalGrade(weightIDs)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != 100 {
+		t.Fatalf("want 100 (100%% in every category, any weights), got %v", got)
+	}
+}
+
+func TestFinalGrade_CustomWeights_SingleCategoryGeneral(t *testing.T) {
+	// 1-category ignores weight entirely — also correct for any weights.
+	weightIDs := map[int]string{}
+	weights := [3]float64{0.1, 0.6, 0.3}
+	s := section(weights, weightIDs, map[string][]uint64{"Mid": {70}})
+	got, err := s.FinalGrade(weightIDs)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != 70 {
+		t.Fatalf("want 70, got %v", got)
+	}
+}
+
+// This is judge's exact repro: two 100% grades under custom weights {0.1,
+// 0.6} used to silently return 0 (h.weight never matched any hardcoded
+// 0.2/0.3/0.5 case, so `weight` stayed its zero value). It must now return
+// ErrUnsupportedWeightCombination instead of a fabricated number.
+func TestFinalGrade_CustomWeights_TwoCategories_ReturnsErrorNotZero(t *testing.T) {
+	weightIDs := map[int]string{}
+	weights := [3]float64{0.1, 0.6, 0.3}
+	s := section(weights, weightIDs, map[string][]uint64{"Low": {100}, "Mid": {100}})
+	got, err := s.FinalGrade(weightIDs)
+	if !errors.Is(err, ErrUnsupportedWeightCombination) {
+		t.Fatalf("want ErrUnsupportedWeightCombination, got value=%v err=%v", got, err)
+	}
+}
+
+// A custom weight combination that happens to exactly match one of the
+// verified default pairs should still work via the table (order shouldn't
+// matter — passing weights in the Low/Mid/High field order that happen to
+// equal the defaults).
+func TestFinalGrade_WeightsMatchingDefaultTable_StillWork(t *testing.T) {
+	weightIDs := map[int]string{}
+	s := section(defaultWeights, weightIDs, map[string][]uint64{"Mid": {100}, "High": {0}})
+	got, err := s.FinalGrade(weightIDs)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != 40 {
+		t.Fatalf("want 40 (mid+high verified split), got %v", got)
 	}
 }
 

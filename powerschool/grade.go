@@ -1,5 +1,21 @@
 package powerschool
 
+import "errors"
+
+// ErrUnsupportedWeightCombination is returned by GradeHolder.Final when
+// exactly 2 of the 3 categories have grades and the weights aren't
+// PowerSchool's default 20/30/50 split. The default split's 2-category
+// redistribution below is an EMPIRICAL table (see the comment block), only
+// ever verified against a real account using the default weights — it is
+// NOT proportional to the two active weights (low+high verified 30/70 vs.
+// proportional 28.6/71.4; mid+high verified 40/60 vs. proportional 37.5/
+// 62.5), so there's no formula to generalize it to custom weights, and no
+// live account with custom weights to verify one against. Rather than fake a
+// redistribution, custom weights are only supported where the math is
+// general: 1-category (no weighting) and 3-category (a plain weighted sum,
+// no redistribution needed).
+var ErrUnsupportedWeightCombination = errors.New("2-category grade redistribution is only verified for PowerSchool's default 20/30/50 weighting; this section has custom weights with exactly 2 graded categories, which can't be computed without a live account to verify against")
+
 // with 3 categories: 20% low, 30% mid, 50% high
 // with 1 category: no weighting
 //
@@ -42,42 +58,42 @@ func (h *GradeHolder) Weight() float64 {
 // grade, given how many categories (1, 2, or 3) have grades this section. If
 // categories == 2, other must contain the weight of the other category
 // present — PowerSchool re-splits the remaining weight between exactly two
-// active categories rather than just dropping the third's share.
-func (h *GradeHolder) Final(categories float64, other ...float64) float64 {
+// active categories rather than just dropping the third's share. Returns
+// ErrUnsupportedWeightCombination for the 2-category case under non-default
+// weights (see that error's doc for why).
+func (h *GradeHolder) Final(categories float64, other ...float64) (float64, error) {
 	avg := float64(h.grade) / h.num
 
 	// powerschool will be the end of me
 	switch categories {
-	case 3: // with 3 categories: 20% low, 30% mid, 50% high
-		return avg * h.weight
+	case 3: // with 3 categories: general weighted sum, valid for any weights
+		return avg * h.weight, nil
 	case 1: // with 1 category: no weighting
-		return avg
+		return avg, nil
 	default:
 		var weight float64
 		cat := other[0]
 
-		switch h.weight {
-		case 0.2:
-			if cat == 0.3 { // low and mid
-				weight = 0.4
-			} else { // low and high
-				weight = 0.3
-			}
-		case 0.3:
-			if cat == 0.2 { // mid and low
-				weight = 0.6
-			} else { // mid and high
-				weight = 0.4
-			}
-		case 0.5:
-			if cat == 0.2 { // high and low
-				weight = 0.7
-			} else { // high and mid
-				weight = 0.6
-			}
+		// this table is only verified against PowerSchool's default 20/30/50
+		// split — see ErrUnsupportedWeightCombination.
+		switch {
+		case h.weight == 0.2 && cat == 0.3: // low and mid
+			weight = 0.4
+		case h.weight == 0.2 && cat == 0.5: // low and high
+			weight = 0.3
+		case h.weight == 0.3 && cat == 0.2: // mid and low
+			weight = 0.6
+		case h.weight == 0.3 && cat == 0.5: // mid and high
+			weight = 0.4
+		case h.weight == 0.5 && cat == 0.2: // high and low
+			weight = 0.7
+		case h.weight == 0.5 && cat == 0.3: // high and mid
+			weight = 0.6
+		default:
+			return 0, ErrUnsupportedWeightCombination
 		}
 
-		return avg * weight
+		return avg * weight, nil
 	}
 }
 

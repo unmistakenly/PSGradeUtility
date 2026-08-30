@@ -42,6 +42,12 @@ func NewClient(baseURL string) *Client {
 // struct against, so token-scanning by local name is the encoding/xml
 // equivalent of that same "find it anywhere" behavior, without the panic risk
 // of an unchecked regex[1] index.
+//
+// On a parse error (e.g. a truncated body) this still returns whatever fields
+// were found before the error, alongside it — a late/truncated tail shouldn't
+// discard an already-found serviceTicket earlier in the document, where the
+// old regex (which scanned the whole raw string independent of parse state)
+// would have been tolerant of exactly that.
 func extractXMLFields(data []byte, names ...string) (map[string]string, error) {
 	want := make(map[string]bool, len(names))
 	for _, n := range names {
@@ -56,7 +62,7 @@ func extractXMLFields(data []byte, names ...string) (map[string]string, error) {
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("parsing xml: %w", err)
+			return found, fmt.Errorf("parsing xml: %w", err)
 		}
 		start, ok := tok.(xml.StartElement)
 		if !ok || !want[start.Name.Local] {
@@ -64,7 +70,7 @@ func extractXMLFields(data []byte, names ...string) (map[string]string, error) {
 		}
 		var text string
 		if err := dec.DecodeElement(&text, &start); err != nil {
-			return nil, fmt.Errorf("parsing xml element %s: %w", start.Name.Local, err)
+			return found, fmt.Errorf("parsing xml element %s: %w", start.Name.Local, err)
 		}
 		if _, already := found[start.Name.Local]; !already {
 			found[start.Name.Local] = text
@@ -97,17 +103,24 @@ func (c *Client) GetServiceTicket(username, password string) (ticket, studentID 
 	}
 	defer resp.Body.Close()
 
+	// generous cap, just a guard against a runaway/malicious response body —
+	// the old 1800-byte limit was sized for a specific sample response and
+	// risked truncating a real one mid-tag.
+	const maxLoginResponseBytes = 1 << 20 // 1MiB
 	respBody := bytes.NewBuffer(make([]byte, 0, 1800))
-	if _, err = io.Copy(respBody, io.LimitReader(resp.Body, 1800)); err != nil {
+	if _, err = io.Copy(respBody, io.LimitReader(resp.Body, maxLoginResponseBytes)); err != nil {
 		return "", "", fmt.Errorf("reading response body: %w", err)
 	}
 
-	fields, err := extractXMLFields(respBody.Bytes(), "serviceTicket", "userType", "studentIDs")
-	if err != nil {
-		return "", "", err
-	}
+	// use whatever fields were found even if the tail parse errored (e.g. a
+	// still-truncated body) — a serviceTicket found before the error point is
+	// still usable, matching the old regex's tolerance of a partial/odd body.
+	fields, parseErr := extractXMLFields(respBody.Bytes(), "serviceTicket", "userType", "studentIDs")
 
 	ticket = fields["serviceTicket"]
+	if ticket == "" && parseErr != nil {
+		return "", "", fmt.Errorf("%w (%v)", ErrNoTicket, parseErr)
+	}
 	if ticket == "" {
 		return "", "", ErrNoTicket
 	}

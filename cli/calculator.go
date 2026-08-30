@@ -56,7 +56,8 @@ func (s *Session) gradeCalculator() error {
 
 	printClasses := func() {
 		for i, c := range sclasses {
-			fmt.Printf("[%d] %s (%.0f%% - %d grades)\n", i, c.ClassName, c.FinalGrade(weightIDs), len(c.Assignments))
+			grade, err := c.FinalGrade(weightIDs)
+			fmt.Printf("[%d] %s (%s - %d grades)\n", i, c.ClassName, formatGrade(grade, err), len(c.Assignments))
 		}
 	}
 	printClasses()
@@ -155,7 +156,8 @@ func (s *Session) classCalculator(origSection *powerschool.Section, weightIDs ma
 			case "":
 			case "v", "view":
 				printAssignments()
-				fmt.Printf("\nfinal grade: %.0f%%\n", section.FinalGrade(weightIDs))
+				grade, err := section.FinalGrade(weightIDs)
+				fmt.Printf("\nfinal grade: %s\n", formatGrade(grade, err))
 			case "a", "add":
 				if len(args) < 3 {
 					fmt.Println("expected at least 3 arguments, got", len(args))
@@ -185,7 +187,8 @@ func (s *Session) classCalculator(origSection *powerschool.Section, weightIDs ma
 					Grade:      grade,
 				})
 
-				fmt.Printf("after adding this assignment, your final grade is %.0f%%\n", section.FinalGrade(weightIDs))
+				fg, ferr := section.FinalGrade(weightIDs)
+				fmt.Printf("after adding this assignment, your final grade is %s\n", formatGrade(fg, ferr))
 			case "d", "del", "delete":
 				if len(args) < 2 {
 					fmt.Println("expected 2 arguments, got", len(args))
@@ -199,7 +202,8 @@ func (s *Session) classCalculator(origSection *powerschool.Section, weightIDs ma
 				}
 
 				section.Assignments = slices.Delete(section.Assignments, i, i+1)
-				fmt.Printf("after deleting this assignment, your final grade is %.0f%%\n", section.FinalGrade(weightIDs))
+				fg, ferr := section.FinalGrade(weightIDs)
+				fmt.Printf("after deleting this assignment, your final grade is %s\n", formatGrade(fg, ferr))
 			case "e", "edit":
 				if len(args) < 3 {
 					fmt.Println("expected 3 arguments, got", len(args))
@@ -219,7 +223,8 @@ func (s *Session) classCalculator(origSection *powerschool.Section, weightIDs ma
 				}
 
 				section.Assignments[i].Edit(grade)
-				fmt.Printf("after editing this assignment, your final grade is %.0f%%\n", section.FinalGrade(weightIDs))
+				fg, ferr := section.FinalGrade(weightIDs)
+				fmt.Printf("after editing this assignment, your final grade is %s\n", formatGrade(fg, ferr))
 			case "r", "restore":
 				if len(args) < 2 {
 					fmt.Println("expected 2 arguments, got", len(args))
@@ -235,7 +240,8 @@ func (s *Session) classCalculator(origSection *powerschool.Section, weightIDs ma
 				a := section.Assignments[i]
 				if a.Edited {
 					a.Restore()
-					fmt.Printf("after changing this grade back to a %d%%, your final grade is %.0f%%\n", a.Grade, section.FinalGrade(weightIDs))
+					fg, ferr := section.FinalGrade(weightIDs)
+					fmt.Printf("after changing this grade back to a %d%%, your final grade is %s\n", a.Grade, formatGrade(fg, ferr))
 				} else {
 					fmt.Println("this assignment hasnt had its grade edited")
 				}

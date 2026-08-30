@@ -145,3 +145,13 @@ func (s *Session) Run() error {
 		}
 	}
 }
+
+// formatGrade renders a FinalGrade result for display — a real grade, or a
+// readable placeholder if it's currently uncomputable (e.g. custom weights
+// with an unverified 2-category combination) instead of a fabricated number.
+func formatGrade(pct float64, err error) string {
+	if err != nil {
+		return fmt.Sprintf("N/A (%s)", err)
+	}
+	return fmt.Sprintf("%.0f%%", pct)
+}

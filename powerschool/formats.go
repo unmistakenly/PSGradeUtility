@@ -1,5 +1,7 @@
 package powerschool
 
+// duplicated in powerschool/crypto/nonce.go (import-cycle constraint — crypto
+// can't import powerschool); kept in sync by crypto's timeformat_test.go
 const TimeFormat = "2006-01-02T15:04:05.000Z"
 
 type Section struct {

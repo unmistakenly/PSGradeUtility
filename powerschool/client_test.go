@@ -1,6 +1,57 @@
 package powerschool
 
-import "testing"
+import (
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+)
+
+// GetServiceTicket end-to-end against a fake server — this is the real
+// student/parent gate (userType != "2"), which had zero direct coverage: an
+// adversarial swap of the check to != "1" passed every other test untouched.
+
+func TestGetServiceTicket_Student_Succeeds(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`<Envelope><Body><loginToPublicPortalResponse><return><serviceTicket>tkt-1</serviceTicket><userType>2</userType><studentIDs>42</studentIDs></return></loginToPublicPortalResponse></Body></Envelope>`))
+	}))
+	defer srv.Close()
+
+	c := NewClient(srv.URL)
+	ticket, studentID, err := c.GetServiceTicket("user", "pass")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if ticket != "tkt-1" || studentID != "42" {
+		t.Fatalf("got ticket=%q studentID=%q", ticket, studentID)
+	}
+}
+
+func TestGetServiceTicket_ParentAccount_Rejected(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`<Envelope><Body><loginToPublicPortalResponse><return><serviceTicket>tkt-1</serviceTicket><userType>1</userType><studentIDs>42</studentIDs></return></loginToPublicPortalResponse></Body></Envelope>`))
+	}))
+	defer srv.Close()
+
+	c := NewClient(srv.URL)
+	_, _, err := c.GetServiceTicket("user", "pass")
+	if !errors.Is(err, ErrNotStudent) {
+		t.Fatalf("want ErrNotStudent, got %v", err)
+	}
+}
+
+func TestGetServiceTicket_NoTicket_Rejected(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`<Envelope><Body><Fault><faultstring>bad credentials</faultstring></Fault></Body></Envelope>`))
+	}))
+	defer srv.Close()
+
+	c := NewClient(srv.URL)
+	_, _, err := c.GetServiceTicket("user", "wrongpass")
+	if !errors.Is(err, ErrNoTicket) {
+		t.Fatalf("want ErrNoTicket, got %v", err)
+	}
+}
 
 // extractXMLFields replaced 3 unchecked regex[1] indexes. Cover the happy
 // path plus the exact failure modes those regexes used to panic on.
