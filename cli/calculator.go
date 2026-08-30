@@ -1,17 +1,14 @@
-package main
+package cli
 
 import (
 	"errors"
 	"fmt"
-	"os"
 	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/unmistakenly/PSGradeUtility/powerschool"
 )
-
-var ErrInvalidIndex = errors.New("invalid index")
 
 const CalcMenuHelpText = `calculator menu commands:
 
@@ -35,19 +32,19 @@ edit <index> <0-100>
 restore <index>`
 
 // gradeCalculator will start its own input loops
-func gradeCalculator(ticket, studentID string, preferClassNames bool) error {
+func (s *Session) gradeCalculator() error {
 	// this will have a lot of shared code with [showAllGrades]
-	if ticket == "" {
+	if s.ticket == "" {
 		return ErrNotSignedIn
 	}
 
-	data, err := getFullDecodedResponse(ticket, studentID)
+	data, err := s.getFullDecodedResponse()
 	if err != nil {
 		return err
 	}
 
 	quarterStart, quarterEnd := data.Response.Return.Data.GetCurrentQuarter()
-	classes, weightIDs := extractInfoFromResponse(data, quarterStart, quarterEnd)
+	classes, weightIDs := extractInfoFromResponse(data, quarterStart, quarterEnd, s.weights())
 
 	sclasses := make([]*powerschool.Section, 0, len(classes))
 	for _, c := range classes {
@@ -66,7 +63,7 @@ func gradeCalculator(ticket, studentID string, preferClassNames bool) error {
 
 	for {
 		fmt.Print("\n>> ")
-		input := GetInput()
+		input := s.GetInput()
 
 		switch input {
 		case "":
@@ -75,7 +72,7 @@ func gradeCalculator(ticket, studentID string, preferClassNames bool) error {
 			fmt.Println()
 			printClasses()
 		case "q", "quit":
-			os.Exit(0)
+			return ErrQuit
 		case "b":
 			return nil
 		default:
@@ -85,17 +82,19 @@ func gradeCalculator(ticket, studentID string, preferClassNames bool) error {
 				break
 			}
 			var ref any
-			if preferClassNames {
+			if s.preferClassNames {
 				ref = sclasses[i].ClassName
 			} else {
 				ref = i
 			}
-			classCalculator(sclasses[i], weightIDs, ref)
+			if err := s.classCalculator(sclasses[i], weightIDs, ref); errors.Is(err, ErrQuit) {
+				return ErrQuit
+			}
 		}
 	}
 }
 
-func classCalculator(origSection *powerschool.Section, weightIDs map[int]string, ref any) error {
+func (s *Session) classCalculator(origSection *powerschool.Section, weightIDs map[int]string, ref any) error {
 	// enforce access of assignments through section only, as it will otherwise cause a runtime error (TOTALLY didnt happen)
 	section := func() *powerschool.Section {
 		// deep copy of origAssignments, so as to not modify it
@@ -105,7 +104,7 @@ func classCalculator(origSection *powerschool.Section, weightIDs map[int]string,
 			assignments[i] = &powerschool.Assignment{
 				Name:       orig.Name,
 				CategoryID: orig.CategoryID,
-				Percent:    orig.Percent,
+				Grade:      orig.Grade,
 			}
 		}
 		return &powerschool.Section{
@@ -125,22 +124,29 @@ func classCalculator(origSection *powerschool.Section, weightIDs map[int]string,
 		}
 	}
 
+	note := func(a *powerschool.Assignment) string {
+		if a.Edited {
+			return " (Edited)"
+		}
+		return ""
+	}
+
 	printAssignments := func() {
 		for i, a := range section.Assignments {
-			fmt.Printf("[%d] %s - %d%% (%s)%s\n", i, a.Name, a.Percent&0xFFFFFFFF, weightIDs[a.CategoryID], a.Note)
+			fmt.Printf("[%d] %s - %d%% (%s)%s\n", i, a.Name, a.Grade, weightIDs[a.CategoryID], note(a))
 		}
 	}
 	printAssignments()
 
 	for {
 		fmt.Printf("\n(%v) >> ", ref)
-		input := GetInput()
+		input := s.GetInput()
 
 		switch input {
 		case "h", "help":
 			fmt.Println(CalcHelpText)
 		case "q", "quit":
-			os.Exit(0)
+			return ErrQuit
 		case "b":
 			return nil
 		default:
@@ -176,7 +182,7 @@ func classCalculator(origSection *powerschool.Section, weightIDs map[int]string,
 				section.Assignments = slices.Insert(section.Assignments, 0, &powerschool.Assignment{
 					Name:       name,
 					CategoryID: weightID,
-					Percent:    grade,
+					Grade:      grade,
 				})
 
 				fmt.Printf("after adding this assignment, your final grade is %.0f%%\n", section.FinalGrade(weightIDs))
@@ -212,21 +218,7 @@ func classCalculator(origSection *powerschool.Section, weightIDs map[int]string,
 					break
 				}
 
-				// how about using the upper 32 bits for the original grade,
-				// and only use the lower portion for calculation?
-
-				a := section.Assignments[i]
-				if !gradeIsEdited(a.Percent) {
-					a.Percent <<= 32     // move original grade to upper 32 bits
-					a.Percent |= 1 << 63 // msb determines if grade is edited, to account for a grade of 0
-					a.Note = " (Edited)"
-				}
-
-				// forgot that i should zero out the lower 32 bits the second time around
-				a.Percent >>= 32
-				a.Percent <<= 32
-
-				a.Percent |= grade & 0xFFFFFFFF // new grade
+				section.Assignments[i].Edit(grade)
 				fmt.Printf("after editing this assignment, your final grade is %.0f%%\n", section.FinalGrade(weightIDs))
 			case "r", "restore":
 				if len(args) < 2 {
@@ -241,11 +233,9 @@ func classCalculator(origSection *powerschool.Section, weightIDs map[int]string,
 				}
 
 				a := section.Assignments[i]
-				if gradeIsEdited(a.Percent) {
-					a.Percent >>= 32        // restore 32 upper bits
-					a.Percent &= 0x7FFFFFFF // and remove the edit bit
-					a.Note = ""
-					fmt.Printf("after changing this grade back to a %d%%, your final grade is %.0f%%\n", a.Percent, section.FinalGrade(weightIDs))
+				if a.Edited {
+					a.Restore()
+					fmt.Printf("after changing this grade back to a %d%%, your final grade is %.0f%%\n", a.Grade, section.FinalGrade(weightIDs))
 				} else {
 					fmt.Println("this assignment hasnt had its grade edited")
 				}
@@ -267,8 +257,4 @@ func parseIndex(args []string, assignments []*powerschool.Assignment) (int, erro
 	}
 
 	return i, nil
-}
-
-func gradeIsEdited(percent uint64) bool {
-	return (percent >> 63) != 0
 }

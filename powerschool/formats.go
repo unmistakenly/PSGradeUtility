@@ -19,8 +19,30 @@ type Assignment struct {
 	SectionID  int    `json:"sectionid"`
 
 	// set these yourself
-	Percent uint64
-	Note    string
+	Grade         uint64 // current grade, used for calculation
+	OriginalGrade uint64 // only meaningful when Edited is true
+	Edited        bool
+}
+
+// Edit sets a's grade to newGrade, remembering the pre-edit grade the first
+// time (a second Edit before a Restore does NOT stomp the original — matches
+// the old bit-packed code's "if !gradeIsEdited" guard).
+func (a *Assignment) Edit(newGrade uint64) {
+	if !a.Edited {
+		a.OriginalGrade = a.Grade
+		a.Edited = true
+	}
+	a.Grade = newGrade
+}
+
+// Restore reverts an edited assignment's grade back to what it was before
+// Edit was called. No-op if the assignment was never edited.
+func (a *Assignment) Restore() {
+	if !a.Edited {
+		return
+	}
+	a.Grade = a.OriginalGrade
+	a.Edited = false
 }
 
 type Term struct {

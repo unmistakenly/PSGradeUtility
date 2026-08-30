@@ -5,6 +5,10 @@ import (
 	"slices"
 )
 
+// FinalGrade computes this section's overall grade (0-100, rounded) from its
+// current Assignments, weighted by category per weightIDs (category ID ->
+// "Low"/"Mid"/"High"). Categories with no graded assignments are excluded
+// from the calculation rather than counted as 0%.
 func (s *Section) FinalGrade(weightIDs map[int]string) float64 {
 	// this way, we dont need to allocate so much
 	s.Low.Reset()
@@ -14,11 +18,11 @@ func (s *Section) FinalGrade(weightIDs map[int]string) float64 {
 	for _, a := range s.Assignments {
 		switch weightIDs[a.CategoryID] {
 		case "Low":
-			s.Low.Add(a.Percent)
+			s.Low.Add(a.Grade)
 		case "Mid":
-			s.Mid.Add(a.Percent)
+			s.Mid.Add(a.Grade)
 		case "High":
-			s.High.Add(a.Percent)
+			s.High.Add(a.Grade)
 		}
 	}
 

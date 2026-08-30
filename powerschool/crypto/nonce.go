@@ -7,9 +7,10 @@ import (
 	"encoding/hex"
 	"io"
 	"time"
-
-	"github.com/unmistakenly/PSGradeUtility/powerschool"
 )
+
+// dateFormat mirrors powerschool.TimeFormat — duplicated (not imported) to
+// avoid an import cycle: powerschool now imports this package for its client.
 
 // two types of nonces are used by powerschool:
 // 1. 8 random bytes, in hex format and base64-encoded, used to get the `serviceTicket` with the user's credentials
@@ -32,5 +33,6 @@ func Nonce(bites int64, b64 bool) (nonce string, date string) {
 		}
 	}()
 
-	return b.String(), time.Now().UTC().Format(powerschool.TimeFormat)
+	const dateFormat = "2006-01-02T15:04:05.000Z"
+	return b.String(), time.Now().UTC().Format(dateFormat)
 }
